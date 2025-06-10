@@ -1,5 +1,3 @@
-
-2.02 KiB
 # .gitlab-ci.yml
 # CI/CD Pipeline stages run sequentially unless dependencies (needs) are defined
 stages:
