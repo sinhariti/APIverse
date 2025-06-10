@@ -16,16 +16,8 @@ variables:
   # Any sensitive key should be set securely via GitLab -> Settings -> CI/CD -> Variables.
 
 # Secret Detection for API keys/secrets accidentally committed to the repo
-secret_detection:
-  stage: test
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-  trigger:
-    include:
-      - template: Security/Secret-Detection.gitlab-ci.yml
-    strategy: depend
-  script:
-    - echo "Running secret detection scan"
+include:
+  - template: Security/Secret-Detection.gitlab-ci.yml
 
 # Backend Testing (Python)
 test-backend:
