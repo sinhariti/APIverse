@@ -23,7 +23,9 @@ include:
 test-backend:
   stage: test
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && -d "backend"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      exists:
+        - backend/
   image: python:3.9
   script:
     - cd backend
@@ -34,7 +36,9 @@ test-backend:
 test-frontend:
   stage: test
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && -d "frontend"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      exists:
+        - frontend/
   image: node:16
   script:
     - cd frontend
