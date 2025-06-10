@@ -1,0 +1,75 @@
+# .gitlab-ci.yml
+
+# CI/CD Pipeline stages run sequentially unless dependencies (needs) are defined
+stages:
+  - test
+  - build
+  - deploy
+
+# Global Variables: Add your environment & secret keys here or via GitLab CI/CD Settings for security
+variables:
+  SECRET_DETECTION_ENABLED: 'true'
+  # Example environment variables (DO NOT hardcode secrets here in production)
+  # DB_USERNAME: "your_db_username"
+  # DB_PASSWORD: "your_db_password"
+  # API_KEY: "your_api_key"
+  # Any sensitive key should be set securely via GitLab -> Settings -> CI/CD -> Variables.
+
+# Secret Detection for API keys/secrets accidentally committed to the repo
+secret_detection:
+  stage: test
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  trigger:
+    include:
+      - template: Security/Secret-Detection.gitlab-ci.yml
+    strategy: depend
+  script:
+    - echo "Running secret detection scan"
+
+# Backend Testing (Python)
+test-backend:
+  stage: test
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && -d "backend"'
+  image: python:3.9
+  script:
+    - cd backend
+    - pip install -r requirements.txt || echo "No requirements.txt found"
+    - echo "Backend tests will run here (pytest later)"
+
+# Frontend Testing (React)
+test-frontend:
+  stage: test
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && -d "frontend"'
+  image: node:16
+  script:
+    - cd frontend
+    - echo "Frontend tests will run here (npm test later)"
+
+# Build Stage (Placeholder - Docker commands to be added later)
+build:
+  stage: build
+  needs:
+    - test-backend
+    - test-frontend
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - echo "Docker builds will go here"
+
+# Deploy Stage (Placeholder - e.g., Google Cloud Run deployment)
+deploy:
+  stage: deploy
+  needs:
+    - build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - echo "Deployment logic will go here"
+
+# Notes:
+# 1. Sensitive variables (API keys, secrets) should be configured via GitLab UI (Settings > CI/CD > Variables) NOT in this file.
+# 2. You can customize SAST, Dependency Scanning, etc. via GitLab’s official templates.
+# 3. Secret Detection template is included here to prevent accidental commit of secrets.
