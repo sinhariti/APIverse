@@ -48,8 +48,10 @@ test-frontend:
 build:
   stage: build
   needs:
-    - test-backend
-    - test-frontend
+    - job: test-backend
+      optional: true
+    - job: test-frontend
+      optional: true
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
