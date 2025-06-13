@@ -66,18 +66,29 @@ function App() {
   const [searchResults, setSearchResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (searchQuery.trim()) {
-      const results = sampleApis.filter(
-        (api) =>
-          api.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          api.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          api.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setSearchResults(results);
-      setHasSearched(true);
+      try {
+        const res = await fetch('http://localhost:8000/api/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query: searchQuery }),
+        });
+  
+        if (!res.ok) throw new Error('Search request failed');
+  
+        const data = await res.json();
+        setSearchResults(data); // backend returns the list directly
+        setHasSearched(true);
+      } catch (error) {
+        console.error('Error searching APIs:', error);
+        setSearchResults([]);
+        setHasSearched(true);
+      }
     } else {
-      setSearchResults(sampleApis);
+      setSearchResults([]);
       setHasSearched(true);
     }
   };
@@ -150,7 +161,7 @@ function App() {
         )}
           {/* API Results */}
         {hasSearched && (
-          <section className="container mx-auto px-4 mt-16 max-w-4xl mb-16">
+          <section className="container mx-auto px-4 mt-16 max-w-4xl mb-16 z-50">
             <div className="space-y-4">
               {searchResults.length > 0 ? (
                 searchResults.map((api) => <ApiCard key={api.id} api={api} />)
@@ -163,7 +174,6 @@ function App() {
           </section>
         )}
         </div>
-
       </main>
     </>
   );

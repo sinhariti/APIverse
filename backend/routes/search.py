@@ -9,6 +9,8 @@ class SearchRequest(BaseModel):
     query: str
 
 @router.post("/api/search")
-async def search_apis_route(request: QueryRequest):
+async def search_apis_route(request: SearchRequest):
+    print("Received query:", request.query)
     results = search_apis(request.query)
+    # print("Results:", results)
     return results
