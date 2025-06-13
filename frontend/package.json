@@ -13,6 +13,7 @@
     "@react-spring/three": "^10.0.1",
     "@react-three/fiber": "^9.1.2",
     "@shadergradient/react": "^2.0.27",
+    "@tailwindcss/postcss": "^4.1.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.513.0",

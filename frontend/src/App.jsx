@@ -5,6 +5,7 @@ import logo from './assets/logo.png';
 // Optional: Lucide icon example
 import { Search } from 'lucide-react';
 import { ApiCard } from './components/api-card';
+import Graph from './components/graph';
 
 
 const sampleApis = [
@@ -109,11 +110,11 @@ function App() {
           />
         </ShaderGradientCanvas>
 
-        <div className="relative z-10 w-full h-auto mb-16">
+        <div className="relative z-10 w-full mb-16">
           {/* Header */}
           <header className="container mx-auto px-4 py-8 flex justify-between items-center">
             <div className="w-64">
-              <img src={logo} alt="APIVerse" className="w-full h-auto" />
+              <img src={logo} alt="APIVerse" className="w-full" />
             </div>
             <nav className="text-white font-mono text-xl flex gap-4">
               <a href="/about" className="hover:text-purple-300 transition-colors">ABOUT</a>|
@@ -122,7 +123,7 @@ function App() {
           </header>
 
           {/* Search Section */}
-          <section className="container mx-auto px-4 mt-16 flex justify-center">
+          <section className="container mx-auto px-4 mt-6 flex justify-center">
             <div className="relative w-full max-w-3xl">
               <input
                 type="text"
@@ -143,10 +144,8 @@ function App() {
 
           {/* Content Container */}
           {!hasSearched && (
-          <section className="container mx-auto px-4 mt-16">
-            <div className="w-4/5 max-w-4xl mx-auto h-[450px] rounded-3xl border border-gray-600/50 bg-gray-800/20 backdrop-blur-sm ">
-              {/* Content will go here */}
-            </div>
+          <section className="container  mx-auto px-4 mt-16 flex justify-center">
+              <Graph />
           </section>
         )}
           {/* API Results */}
