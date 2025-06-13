@@ -218,7 +218,7 @@ function Graph() {
             hoveredText.current.material.color.copy(hoveredText.current.userData.originalColor);
           }
           hoveredText.current = mesh;
-          mesh.material.color.set(0xffcc00);
+          mesh.material.color.set(0xaf93fd);
           canvas.style.cursor = "pointer";
         }
       }
@@ -277,7 +277,7 @@ function Graph() {
   return (
     <canvas
       ref={canvasRef}
-      className=" max-w-full h-[450px] rounded-3xl border border-gray-600/50 bg-gray-800/20 backdrop-blur-sm"
+      className=" max-w-full h-[450px] rounded-3xl border border-gray-600/50 bg-gray-800/20 backdrop-blur-sm  hover:shadow-[0_0_30px_rgba(127,92,255,0.3)] transition-all duration-300"
     />
   );
 }

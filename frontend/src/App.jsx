@@ -144,7 +144,7 @@ function App() {
 
           {/* Content Container */}
           {!hasSearched && (
-          <section className="container  mx-auto px-4 mt-16 flex justify-center">
+          <section className="container w-4/5 mx-auto mt-16 flex justify-center">
               <Graph />
           </section>
         )}
