@@ -38,14 +38,31 @@ export function ApiCard({ api }) {
     }
   };
 
+  // const handleHealthCheck = async () => {
+  //   setHealthLoading(true);
+  //   setHealthData(null);
+  //   try {
+  //     const res = await fetch(`http://localhost:8000/api/health-check/${api._id}`);
+  //     const data = await res.json();
+  //     setHealthData(data);
+  //   } catch (error) {
+  //     setHealthData({ status: "Down", latency_ms: -1 });
+  //   } finally {
+  //     setHealthLoading(false);
+  //     setIsHealthModalOpen(true);
+  //   }
+  // };
+
   const handleHealthCheck = async () => {
+    console.log("Health check triggered for API:", api);
     setHealthLoading(true);
     setHealthData(null);
     try {
-      const res = await fetch(`http://localhost:8000/api/health-check/${api.id}`);
+      const res = await fetch(`http://localhost:8000/api/health-check/${api._id}`);
       const data = await res.json();
       setHealthData(data);
     } catch (error) {
+      console.error("Health check error:", error);
       setHealthData({ status: "Down", latency_ms: -1 });
     } finally {
       setHealthLoading(false);
