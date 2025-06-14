@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Zap, HeartPulse } from "lucide-react";
 import { Tooltip } from "./tooltip";
+import IntegrationModal from "./suggestion";
+import DotLoader from "./loader";
 
 export function ApiCard({ api }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -42,13 +44,7 @@ export function ApiCard({ api }) {
     try {
       const res = await fetch(`http://localhost:8000/api/health-check/${api.id}`);
       const data = await res.json();
-      // setHealthData(data);
-      const formatted = data.map(api => ({
-        ...api,
-        id: api._id,
-      }));
-      
-      setSearchResults(formatted);
+      setHealthData(data);
     } catch (error) {
       setHealthData({ status: "Down", latency_ms: -1 });
     } finally {
@@ -60,9 +56,9 @@ export function ApiCard({ api }) {
   return (
     <div
       className={`relative rounded-3xl bg-gray-700/70 backdrop-blur-sm border border-gray-600/50 
-        transition-all duration-300 cursor-pointer
-        hover:shadow-[0_0_30px_rgba(127,92,255,0.3)] hover:border-purple-500/50
-        ${isExpanded ? "shadow-[0_0_20px_rgba(127,92,255,0.2)]" : ""}`}
+      transition-all duration-300 cursor-pointer
+      ${isModalOpen ? "opacity-30 pointer-events-none" : ""}
+      hover:shadow-[0_0_30px_rgba(127,92,255,0.3)] hover:border-purple-500/50`}
       onClick={toggleExpanded}
     >
       <div className="p-6">
@@ -103,7 +99,7 @@ export function ApiCard({ api }) {
               </div>
 
               <div className="flex gap-3 ml-4 items-center">
-                {/* Health Check */}
+                {/* Health Button */}
                 <Tooltip content="Check the health status of this API">
                   <button
                     onClick={(e) => {
@@ -116,9 +112,10 @@ export function ApiCard({ api }) {
                   </button>
                 </Tooltip>
 
-                {/* Integration Suggest */}
+                {/* Integration Button with Loader */}
                 <Tooltip content="Suggest integration code for this API">
                   <button
+                    
                     onClick={(e) => {
                       e.stopPropagation();
                       handleIntegrationSuggest();
@@ -128,22 +125,26 @@ export function ApiCard({ api }) {
                     <Zap className="w-5 h-5" />
                   </button>
                 </Tooltip>
-
+                {/* Full-Screen Loader */}
+                {loading && (
+                  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center">
+                    <div className="text-center space-y-4">
+                      <DotLoader />
+                      <p className="text-white font-medium">Generating integration code...</p>
+                    </div>
+                  </div>
+                )}
+                {/* Auth Tag */}
                 {api.hasAuth && (
-                  <Tooltip content="Authentication Required: This API requires an API key, token, or other authentication method to access.">
+                  <Tooltip content="Authentication Required">
                     <span className="px-4 py-2 bg-teal-600 text-white rounded-full text-sm font-medium cursor-help">
                       Auth
                     </span>
                   </Tooltip>
                 )}
 
-                <Tooltip
-                  content={
-                    api.hasCors
-                      ? "CORS Enabled: Cross-Origin Resource Sharing is supported."
-                      : "CORS Not Supported: Requests may be blocked."
-                  }
-                >
+                {/* CORS Tag */}
+                <Tooltip content={api.hasCors ? "CORS Enabled" : "CORS Not Supported"}>
                   <span
                     className={`px-4 py-2 text-white rounded-full text-sm font-medium cursor-help ${
                       api.hasCors ? "bg-green-600" : "bg-red-400"
@@ -158,36 +159,19 @@ export function ApiCard({ api }) {
         )}
 
         {/* Integration Modal */}
-        {isModalOpen && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-[9999]"
-            onClick={() => setIsModalOpen(false)}
-          >
-            <div
-              className="bg-gray-900 border border-purple-500 rounded-xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto mx-4 text-white"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 className="text-2xl mb-4 font-semibold text-purple-400">Suggested Integration Code</h2>
-
-              {loading ? (
-                <p className="text-center text-gray-400">Generating...</p>
-              ) : (
-                <div className="bg-gray-800 p-4 rounded-lg max-h-[60vh] overflow-auto">
-                  <pre className="text-green-400 whitespace-pre-wrap text-sm">
-                    <code>{codeSnippet}</code>
-                  </pre>
-                </div>
-              )}
-
-              <button
-                className="mt-4 bg-purple-600 hover:bg-purple-500 text-white py-2 px-4 rounded"
-                onClick={() => setIsModalOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
+        <IntegrationModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          loading={loading}
+          api={{
+            name: api.name,
+            description: api.description,
+            endpoint: api.api_url,
+            hasAuth: api.hasAuth,
+            hasCors: api.hasCors,
+            codeSnippet: codeSnippet,
+          }}
+        />
 
         {/* Health Check Modal */}
         {isHealthModalOpen && (
@@ -199,7 +183,9 @@ export function ApiCard({ api }) {
               className="bg-gray-900 border border-teal-500 rounded-xl p-6 w-[90%] max-w-md mx-4 text-white"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-2xl mb-4 font-semibold text-teal-400">API Health Check</h2>
+              <h2 className="text-2xl mb-4 font-semibold text-teal-400">
+                API Health Check
+              </h2>
 
               {healthLoading ? (
                 <p className="text-center text-gray-400">Checking...</p>

@@ -6,6 +6,7 @@ import logo from './assets/logo.png';
 import { Search } from 'lucide-react';
 import { ApiCard } from './components/api-card';
 import Graph from './components/graph';
+import DotLoader from './components/loader';
 
 
 const sampleApis = [
@@ -65,27 +66,29 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const handleSearch = async () => {
     if (searchQuery.trim()) {
+      setSearchLoading(true); // Start loading
       try {
         const res = await fetch('http://localhost:8000/api/search', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query: searchQuery }),
         });
   
         if (!res.ok) throw new Error('Search request failed');
   
         const data = await res.json();
-        setSearchResults(data); // backend returns the list directly
+        setSearchResults(data);
         setHasSearched(true);
       } catch (error) {
         console.error('Error searching APIs:', error);
         setSearchResults([]);
         setHasSearched(true);
+      } finally {
+        setSearchLoading(false); // End loading
       }
     } else {
       setSearchResults([]);
@@ -128,6 +131,7 @@ function App() {
               <img src={logo} alt="APIVerse" className="w-full" />
             </div>
             <nav className="text-white font-mono text-xl flex gap-4">
+              <a href="/" className="hover:text-purple-300 transition-colors">HOME</a>|
               <a href="/about" className="hover:text-purple-300 transition-colors">ABOUT</a>|
               <a href="/contact" className="hover:text-purple-300 transition-colors">CONTACT</a>
             </nav>
@@ -174,6 +178,14 @@ function App() {
           </section>
         )}
         </div>
+        {searchLoading && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <DotLoader />
+            <p className="text-white font-medium text-lg">Searching APIs...</p>
+          </div>
+        </div>
+      )}
       </main>
     </>
   );
