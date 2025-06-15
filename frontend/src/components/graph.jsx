@@ -9,7 +9,18 @@ const apiCategories = [
   "Health", "Education", "Gaming", "Social Media"
 ];
 
-function Graph() {
+
+const getSize = (count) => {
+  // Adjust min/max as needed for your visualization
+  const minSize = 0.5;
+  const maxSize = 2.0;
+  const minCount = 1;
+  const maxCount = Math.max(...Object.values(apiCategories));
+  // Linear scaling
+  return minSize + ((count - minCount) / (maxCount - minCount)) * (maxSize - minSize);
+};
+
+function Graph({setSearchResults,setHasSearched}) {
   const canvasRef = useRef();
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
@@ -193,17 +204,48 @@ function Graph() {
     });
 
     // Click detection
-    canvas.addEventListener("click", (event) => {
+    const handleClick = async (event) => {
       const rect = canvas.getBoundingClientRect();
       mouse.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.current.setFromCamera(mouse.current, cameraRef.current);
       const hits = raycaster.current.intersectObjects(clickBoxes);
+
       if (hits.length) {
-        alert(`You clicked on "${hits[0].object.userData.label}"`);
+        const categoryLabel = hits[0].object.userData.label;
+        await filterByCategory(categoryLabel);
       }
-    });
+    };
+    window.addEventListener("click", handleClick);
+
+    async function filterByCategory(label) {
+      try {
+        const response = await fetch("http://localhost:8000/api/filter_by_categories", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            categories: [label],
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("category request failed");
+        }
+
+        const data = await response.json();
+        setSearchResults(data);
+        setHasSearched(true);
+        console.log("API Response:", data);
+        // Handle the response as needed
+      } catch (error) {
+        console.error("Error calling API:", error);
+        setSearchResults([]);
+        setHasSearched(true);
+      }
+    }
 
     const onResize = () => {
       renderer.setSize(window.innerWidth, 450);
@@ -216,6 +258,7 @@ function Graph() {
 
     return () => {
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("click", handleClick);
       renderer.dispose();
       scene.clear();
     };

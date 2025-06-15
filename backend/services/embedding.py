@@ -97,3 +97,28 @@ def embed_all_apis():
 # Optional: Run embedding script manually if needed
 # if __name__ == "__main__":
 #     embed_all_apis()
+
+def get_categories():
+    """
+    Retrieve all unique categories from the APIs collection.
+    """
+    try:
+        category_strings = collection.distinct("category")
+        category_count = {}
+
+        for cat_str in category_strings:
+            if cat_str:
+                cats = [c.strip().lower() for c in cat_str.split(",") if c.strip()]
+                for cat in cats:
+                    if len(cat.split()) == 1:
+                        category_count[cat] = category_count.get(cat, 0) + 1
+
+        # Filter to only categories with more than 1 count
+        filtered = {cat: count for cat, count in category_count.items() if count > 1}
+
+        return filtered
+    except Exception as e:
+        print(f"Error retrieving categories: {e}")
+        return {}
+    
+# print(get_categories())

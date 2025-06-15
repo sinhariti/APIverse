@@ -34,7 +34,8 @@ async def filter_by_categories(payload: CategoryFilterRequest):
         # Combine with $or
         cursor = collection.find({"$or": regex_filters})
         apis = [serialize_doc(doc) for doc in cursor]
-        return {"count": len(apis), "results": apis}
+        # return {"count": len(apis), "results": apis}
+        return apis
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error filtering categories: {e}")
     
