@@ -108,7 +108,8 @@ def get_categories():
 
         for cat_str in category_strings:
             if cat_str:
-                cats = [c.strip().lower() for c in cat_str.split(",") if c.strip()]
+                # Split and deduplicate within the string
+                cats = set(c.strip().lower() for c in cat_str.split(",") if c.strip())
                 for cat in cats:
                     if len(cat.split()) == 1:
                         category_count[cat] = category_count.get(cat, 0) + 1
