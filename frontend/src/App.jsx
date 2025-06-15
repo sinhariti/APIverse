@@ -129,7 +129,7 @@ function App() {
           {/* Header */}
           <header className="container mx-auto px-4 py-8 flex justify-between items-center">
             <div className="w-64">
-              <img src={logo} alt="APIVerse" className="w-full" />
+              <a href='/'><img src={logo} alt="APIVerse" className="w-full" /></a>
             </div>
             <nav className="text-white font-mono text-xl flex gap-4">
               <a href="/" className="hover:text-purple-300 transition-colors">HOME</a>|
