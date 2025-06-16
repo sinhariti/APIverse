@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Zap, HeartPulse } from "lucide-react";
+import { CopyCheck, Copy } from "lucide-react";
 import { Tooltip } from "./tooltip";
 import IntegrationModal from "./suggestion";
 import DotLoader from "./loader";
@@ -12,6 +13,7 @@ export function ApiCard({ api }) {
   const [codeSnippet, setCodeSnippet] = useState("");
   const [healthData, setHealthData] = useState(null);
   const [healthLoading, setHealthLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const toggleExpanded = () => setIsExpanded(!isExpanded);
 
@@ -103,10 +105,22 @@ export function ApiCard({ api }) {
 
             <div>
               <span className="text-gray-300 text-sm font-mono">Endpoint:</span>
-              <div className="mt-1 p-3 bg-gray-800/50 rounded-lg border border-gray-600/30">
-                <code className="text-green-400 font-mono text-sm break-all">
-                  {api.api_url}
-                </code>
+              <div className="mt-1 p-3 bg-gray-800/50 rounded-lg border border-gray-600/30 flex items-center justify-between gap-2">
+                <code className="text-green-400 font-mono text-sm break-all">{api.api_url}</code>
+
+                <Tooltip content={copied ? "Copied!" : "Copy endpoint"}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(api.api_url);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+                    }}
+                    className="p-1 bg-gray-700 hover:bg-gray-600 rounded-full text-white transition-colors"
+                  >
+                    {copied ? <CopyCheck className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+                  </button>
+                </Tooltip>
               </div>
             </div>
 
