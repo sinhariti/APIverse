@@ -81,6 +81,7 @@ function App() {
         if (!res.ok) throw new Error('Search request failed');
   
         const data = await res.json();
+        console.log("API Response:", data);
         setSearchResults(data);
         setHasSearched(true);
       } catch (error) {
@@ -128,7 +129,7 @@ function App() {
           {/* Header */}
           <header className="container mx-auto px-4 py-8 flex justify-between items-center">
             <div className="w-64">
-              <img src={logo} alt="APIVerse" className="w-full" />
+              <a href='/'><img src={logo} alt="APIVerse" className="w-full" /></a>
             </div>
             <nav className="text-white font-mono text-xl flex gap-4">
               <a href="/" className="hover:text-purple-300 transition-colors">HOME</a>|
@@ -160,7 +161,7 @@ function App() {
           {/* Content Container */}
           {!hasSearched && (
           <section className="container w-4/5 mx-auto mt-16 flex justify-center">
-              <Graph />
+              <Graph setSearchResults={setSearchResults} setHasSearched={setHasSearched}/>
           </section>
         )}
           {/* API Results */}
@@ -168,7 +169,7 @@ function App() {
           <section className="container mx-auto px-4 mt-16 max-w-4xl mb-16 z-50">
             <div className="space-y-4">
               {searchResults.length > 0 ? (
-                searchResults.map((api) => <ApiCard key={api.id} api={api} />)
+                searchResults.map((api) => <ApiCard key={api._id} api={api} />)
               ) : (
                 <div className="text-center text-white text-xl py-8">
                   No APIs found matching your search.
