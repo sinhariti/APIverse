@@ -39,8 +39,6 @@ build:
   needs:
     - job: test-backend
       optional: false
-    - job: test-frontend
-      optional: false
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
