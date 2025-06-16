@@ -22,9 +22,25 @@ test-backend:
     - if: '$CI_COMMIT_BRANCH == "main"'
       exists:
         - backend/
+  image: python:3.9
+  script:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      exists:
+        - backend/
   image: python:3.11-slim 
   before_script:
     - cd backend
+    - pip install -r requirements.txt || echo "No requirements.txt found"
+    - echo "Backend tests will run here (pytest later)"
+
+# Frontend Testing (React)
+test-frontend:
+  stage: test
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      exists:
+        - frontend/
+  image: node:16
     - pip install --upgrade pip
     - pip install -r requirements.txt
     - pip install pytest pytest-asyncio httpx asgi-lifespan
