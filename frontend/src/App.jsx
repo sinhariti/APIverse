@@ -9,59 +9,6 @@ import Graph from './components/graph';
 import DotLoader from './components/loader';
 
 
-const sampleApis = [
-  {
-    id: 1,
-    name: "Weather API",
-    category: "Weather",
-    description: "Get real-time weather data for any location worldwide with detailed forecasts and historical data",
-    endpoint: "https://api.weather.com/v1",
-    hasAuth: true,
-    hasCors: false,
-    additionalInfo: "Provides comprehensive weather information including temperature, humidity, wind speed, and precipitation data.",
-  },
-  {
-    id: 2,
-    name: "User Management API",
-    category: "Authentication",
-    description: "Complete user authentication and management system with OAuth2 support",
-    endpoint: "https://api.usermgmt.com/v2",
-    hasAuth: true,
-    hasCors: true,
-    additionalInfo: "Secure user registration, login, profile management, and role-based access control.",
-  },
-  {
-    id: 3,
-    name: "Payment Gateway API",
-    category: "Finance",
-    description: "Process payments securely with support for multiple payment methods and currencies",
-    endpoint: "https://api.payments.com/v1",
-    hasAuth: true,
-    hasCors: true,
-    additionalInfo: "Supports credit cards, digital wallets, and bank transfers with PCI compliance.",
-  },
-  {
-    id: 4,
-    name: "Image Processing API",
-    category: "Media",
-    description: "Advanced image manipulation, resizing, filtering, and format conversion",
-    endpoint: "https://api.imageproc.com/v1",
-    hasAuth: false,
-    hasCors: true,
-    additionalInfo: "Batch processing, AI-powered enhancement, and real-time image transformations.",
-  },
-  {
-    id: 5,
-    name: "News Aggregator API",
-    category: "News",
-    description: "Access news articles from thousands of sources worldwide with real-time updates",
-    endpoint: "https://api.newsagg.com/v1",
-    hasAuth: true,
-    hasCors: false,
-    additionalInfo: "Categorized news, sentiment analysis, and customizable news feeds.",
-  },
-];
-
 function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -147,6 +94,7 @@ function App() {
                 placeholder="Search APIs"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyPress}
                 className="w-full py-4 px-6 rounded-full bg-gray-700/70 backdrop-blur-sm text-white text-2xl focus:outline-none focus:ring-0 hover:shadow-[0_0_30px_rgba(127,92,255,0.3)] transition-all duration-300"
               />
               <button
@@ -162,7 +110,7 @@ function App() {
           {/* Content Container */}
           {!hasSearched && (
           <section className="container w-4/5 mx-auto mt-16 flex justify-center">
-              <Graph setSearchResults={setSearchResults} setHasSearched={setHasSearched}/>
+              <Graph setSearchLoading={setSearchLoading} setSearchResults={setSearchResults} setHasSearched={setHasSearched}/>
           </section>
         )}
           {/* API Results */}
