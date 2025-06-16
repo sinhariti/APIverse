@@ -31,7 +31,7 @@ build-backend:
     - echo "Building Backend Docker image"
     - ls -al backend/
     - cat backend/Dockerfile
-    - gcloud builds submit backend/ --tag gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD_BACKEND
+    - gcloud builds submit backend/ --tag gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD_BACKEND --verbosity=debug
 
 build-frontend:
   stage: build
@@ -40,7 +40,7 @@ build-frontend:
     - echo "Building Frontend Docker image"
     - ls -al backend/
     - cat backend/Dockerfile
-    - gcloud builds submit frontend/ --tag gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD_FRONTEND
+    - gcloud builds submit frontend/ --tag gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD_FRONTEND --verbosity=debug
 
 deploy-backend:
   stage: deploy
