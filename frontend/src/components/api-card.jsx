@@ -42,7 +42,7 @@ export function ApiCard({ api }) {
   };
 
   const handleHealthCheck = async () => {
-    console.log("Health check triggered for API:", api);
+    // console.log("Health check triggered for API:", api);
     setHealthLoading(true);
     setHealthData(null);
     try {

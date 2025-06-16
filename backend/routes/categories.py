@@ -14,7 +14,7 @@ def serialize_doc(doc):
         return val
     
     return {
-        "id": str(doc.get("_id")),
+        "_id": str(doc.get("_id")),
         "name": sanitize_value(doc.get("name")),
         "description": sanitize_value(doc.get("description")),
         "category": sanitize_value(doc.get("category")),

@@ -368,7 +368,7 @@ function Graph({ setSearchResults, setHasSearched , setSearchLoading}) {
         const instanceId = hits[0].instanceId;
         const categoryLabel = instanceMetaRef.current[instanceId]?.label;
         if (categoryLabel) {
-          console.log("Clicked category:", categoryLabel);
+          // console.log("Clicked category:", categoryLabel);
           await filterByCategory(categoryLabel);
         }
       }
@@ -395,7 +395,7 @@ function Graph({ setSearchResults, setHasSearched , setSearchLoading}) {
         const data = await response.json();
         setSearchResults(data);
         setHasSearched(true);
-        console.log("API Response:", data);
+        // console.log("API Response:", data);
         // Handle the response as needed
       } catch (error) {
         console.error("Error calling API:", error);
