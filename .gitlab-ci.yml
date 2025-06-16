@@ -1,5 +1,3 @@
-# .gitlab-ci.yml
-# CI/CD Pipeline stages run sequentially unless dependencies (needs) are defined
 stages:
   - test
   - build
@@ -11,7 +9,6 @@ variables:
 include:
   - template: Security/Secret-Detection.gitlab-ci.yml
 
-# ------------------ Backend Testing ------------------
 test:
   stage: test
   rules:
@@ -22,34 +19,48 @@ test:
   before_script:
     - cd backend/test
     - pip install --upgrade pip
-    - pip install -r requirements.txt
+    - pip install -r ../requirements.txt
     - pip install pytest pytest-asyncio httpx asgi-lifespan
   script:
     - pytest test_main.py --maxfail=1 --disable-warnings -v
 
-
-# ------------------ Docker Build ------------------
-build:
+build-backend:
   stage: build
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
   image: google/cloud-sdk:slim
   script:
-    - echo "Building Docker image"
-    - gcloud builds submit --tag gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD
+    - echo "Building Backend Docker image"
+    - gcloud builds submit backend/ --tag gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD_BACKEND
 
-# ------------------ Deploy to Cloud Run ------------------
-deploy:
+build-frontend:
+  stage: build
+  image: google/cloud-sdk:slim
+  script:
+    - echo "Building Frontend Docker image"
+    - gcloud builds submit frontend/ --tag gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD_FRONTEND
+
+deploy-backend:
   stage: deploy
   needs:
-    - build
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-  image: google/cloud-sdk:slim 
+    - build-backend
+  image: google/cloud-sdk:slim
   script:
-    - echo "Deploying to Cloud Run"
-    - gcloud run deploy $GOOGLE_CLOUD_BUILD \
-        --image gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD \
+    - echo "Deploying Backend to Cloud Run"
+    - gcloud run deploy $BACKEND_SERVICE_NAME \
+        --image gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD_BACKEND \
+        --region 'us-central1' \
+        --port 8000 \
+        --platform managed \
+        --allow-unauthenticated
+
+deploy-frontend:
+  stage: deploy
+  needs:
+    - build-frontend
+  image: google/cloud-sdk:slim
+  script:
+    - echo "Deploying Frontend to Cloud Run"
+    - gcloud run deploy $FRONTEND_SERVICE_NAME \
+        --image gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD_FRONTEND \
         --region 'us-central1' \
         --port 80 \
         --platform managed \
