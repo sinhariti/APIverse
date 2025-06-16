@@ -33,6 +33,7 @@ build:
   stage: build
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+  image: google/cloud-sdk:slim
   script:
     - echo "Building Docker image"
     - gcloud builds submit --tag gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD
@@ -44,6 +45,7 @@ deploy:
     - build
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+  image: google/cloud-sdk:slim 
   script:
     - echo "Deploying to Cloud Run"
     - gcloud run deploy $GOOGLE_CLOUD_BUILD \
