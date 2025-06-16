@@ -29,6 +29,8 @@ build-backend:
   image: google/cloud-sdk:slim
   script:
     - echo "Building Backend Docker image"
+    - ls -al backend/
+    - cat backend/Dockerfile
     - gcloud builds submit backend/ --tag gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD_BACKEND
 
 build-frontend:
@@ -36,6 +38,8 @@ build-frontend:
   image: google/cloud-sdk:slim
   script:
     - echo "Building Frontend Docker image"
+    - ls -al backend/
+    - cat backend/Dockerfile
     - gcloud builds submit frontend/ --tag gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD_FRONTEND
 
 deploy-backend:
