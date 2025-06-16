@@ -3,6 +3,26 @@ import * as THREE from "three";
 import { FontLoader } from "three/addons/loaders/FontLoader.js";
 import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
 
+// --- Font caching helper ---
+let cachedFont = null;
+let cachedFontPromise = null;
+function loadFontOnce() {
+  if (cachedFont) return Promise.resolve(cachedFont);
+  if (!cachedFontPromise) {
+    cachedFontPromise = new Promise((resolve, reject) => {
+      new FontLoader().load(
+        "https://threejs.org/examples/fonts/helvetiker_regular.typeface.json",
+        (font) => {
+          cachedFont = font;
+          resolve(font);
+        },
+        undefined,
+        reject
+      );
+    });
+  }
+  return cachedFontPromise;
+}
 
 const apiCategories = {
   'ai': 5,
@@ -45,7 +65,7 @@ const getSize = (count) => {
   return minSize + ((count - minCount) / (maxCount - minCount)) * (maxSize - minSize);
 };
 
-function Graph({ setSearchResults, setHasSearched }) {
+function Graph({ setSearchResults, setHasSearched , setSearchLoading}) {
   const canvasRef = useRef();
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
@@ -54,7 +74,21 @@ function Graph({ setSearchResults, setHasSearched }) {
   const cameraRef = useRef();
   const PORT = import.meta.env.VITE_API_BASE_URL;
 
+  // --- InstancedMesh state ---
+  const instancedBoxRef = useRef(null);
+  const instanceMetaRef = useRef([]); // Array of { label, textMesh }
+
   useEffect(() => {
+    let textMeshes = [];
+    let instanceMeta = [];
+    let instancedBox = null;
+    let instanceIdx = 0;
+    let totalInstances = 0;
+    let basePairs = [];
+    let gridParams = {};
+    let layersToAdd = [];
+    let addedLayers = new Set();
+
     const canvas = canvasRef.current;
     const scene = new THREE.Scene();
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
@@ -72,118 +106,199 @@ function Graph({ setSearchResults, setHasSearched }) {
     camera.position.set(0, 0, 20);
     scene.add(new THREE.AmbientLight(0xffffff, 1));
 
-    const clickBoxes = [];
-    const textMeshes = [];
+    // --- InstancedMesh state ---
+    instancedBoxRef.current = null;
+    instanceMetaRef.current = [];
 
-    new FontLoader().load(
-      "https://threejs.org/examples/fonts/helvetiker_regular.typeface.json",
-      (font) => {
-        // --- Distribute texts in a jittered grid covering the canvas ---
-        const n = Object.keys(apiCategories).length;
-        const aspect = window.innerWidth / 450;
-        const d = 10;
-        // Define desired grid shape (width:height ratio)
-        const gridAspectRatio = 0.7; // Adjust (smaller = more vertical layout)
-        const cols = Math.ceil(Math.sqrt(n * gridAspectRatio));
-        const rows = Math.ceil(n / cols);
-        const gridWidth = d * 2 * aspect * 0.95;
-        const gridHeight = d * 2 * 0.95;
-        const spacingX = gridWidth / (cols);
-        const spacingY = gridHeight / (rows - 1);
+    loadFontOnce().then((font) => {
+      // --- Grid and basePairs setup ---
+      const n = Object.keys(apiCategories).length;
+      const aspect = window.innerWidth / 450;
+      const d = 10;
+      const gridAspectRatio = 0.7;
+      const cols = Math.ceil(Math.sqrt(n * gridAspectRatio));
+      const rows = Math.ceil(n / cols);
+      const gridWidth = d * 2 * aspect * 0.95;
+      const gridHeight = d * 2 * 0.95;
+      const spacingX = gridWidth / (cols);
+      const spacingY = gridHeight / (rows - 1);
 
-        const basePairs = Object.entries(apiCategories).map(([text, count], idx) => {
-          const displayText = text.charAt(0).toUpperCase() + text.slice(1);
-          const size = getSize(count);
-          const geom = new TextGeometry(displayText, { font, size, depth: 0.1 });
-          geom.center();
+      gridParams = { aspect, d, cols, rows, gridWidth, gridHeight, spacingX, spacingY };
 
-          const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
-          const mesh = new THREE.Mesh(geom, material);
-          mesh.userData.label = displayText;
-          mesh.userData.originalColor = material.color.clone();
+      basePairs = Object.entries(apiCategories).map(([text, count], idx) => {
+        const displayText = text.charAt(0).toUpperCase() + text.slice(1);
+        const size = getSize(count);
+        const geom = new TextGeometry(displayText, { font, size, depth: 0.1 });
+        geom.center();
 
-          // Grid position with jitter
-          const row = Math.floor(idx / cols);
-          const col = idx % cols;
-          const jitterX = (Math.random() - 0.5) * spacingX * 0.6;
-          const jitterY = (Math.random() - 0.5) * spacingY * 0.5;
-          const x = -gridWidth / 2 + col * spacingX + jitterX;
-          const y = gridHeight / 2 - row * spacingY + jitterY;
+        const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const mesh = new THREE.Mesh(geom, material);
+        mesh.userData.label = displayText;
+        mesh.userData.originalColor = material.color.clone();
 
-          const basePos = new THREE.Vector3(x, y, 0);
+        const row = Math.floor(idx / cols);
+        const col = idx % cols;
+        const jitterX = (Math.random() - 0.5) * spacingX * 0.6;
+        const jitterY = (Math.random() - 0.5) * spacingY * 0.5;
+        const x = -gridWidth / 2 + col * spacingX + jitterX;
+        const y = gridHeight / 2 - row * spacingY + jitterY;
 
-          return { displayText, geom, material, mesh, basePos };
-        });
-        // --- END: Replace spiral with jittered grid ---
+        const basePos = new THREE.Vector3(x, y, 0);
 
-        for (let xi = -1; xi <= 1; xi++) {
-          for (let yi = -2; yi <= 2; yi++) {
-            basePairs.forEach(({ displayText, geom, material, basePos }) => {
-              const mesh = new THREE.Mesh(geom.clone(), material.clone());
-              mesh.userData.label = displayText;
-              mesh.userData.originalColor = mesh.material.color.clone();
+        return { displayText, geom, material, mesh, basePos };
+      });
 
-              const offset = new THREE.Vector3(
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 30,
-                0
-              );
-              const target = basePos.clone().add(new THREE.Vector3(
-                xi * d * 2 * aspect,
-                yi * d * 2,
-                0
-              ));
-              mesh.position.copy(offset);
-              mesh.userData.target = target;
-              mesh.userData.phase = Math.random() * Math.PI * 2;
-              scene.add(mesh);
-              textMeshes.push(mesh);
-
-              // Create matching interaction box
-              geom.computeBoundingBox();
-              const bb = geom.boundingBox;
-              const size = new THREE.Vector3().subVectors(bb.max, bb.min);
-              const boxGeom = new THREE.BoxGeometry(size.x, size.y, 0.3);
-              const boxMesh = new THREE.Mesh(
-                boxGeom,
-                new THREE.MeshBasicMaterial({ visible: false })
-              );
-              boxMesh.position.copy(target);
-              boxMesh.userData.label = displayText;
-              boxMesh.userData.textMesh = mesh;
-              boxMesh.userData.phase = mesh.userData.phase;
-              scene.add(boxMesh);
-              clickBoxes.push(boxMesh);
-
-              // Link box to mesh
-              mesh.userData.boxMesh = boxMesh;
-            });
-          }
+      // --- Prepare layers: center first, then surrounding ---
+      // Layers are sorted by Manhattan distance from (0,0)
+      const layerCoords = [];
+      const maxXi = 1, maxYi = 2;
+      for (let xi = -maxXi; xi <= maxXi; xi++) {
+        for (let yi = -maxYi; yi <= maxYi; yi++) {
+          layerCoords.push({ xi, yi, dist: Math.abs(xi) + Math.abs(yi) });
         }
       }
-    );
+      layerCoords.sort((a, b) => a.dist - b.dist);
+
+      // Group by layer distance
+      layersToAdd = [];
+      let lastDist = -1, currentLayer = [];
+      for (const { xi, yi, dist } of layerCoords) {
+        if (dist !== lastDist) {
+          if (currentLayer.length) layersToAdd.push(currentLayer);
+          currentLayer = [];
+          lastDist = dist;
+        }
+        currentLayer.push({ xi, yi });
+      }
+      if (currentLayer.length) layersToAdd.push(currentLayer);
+
+      // --- Calculate totalInstances for InstancedMesh ---
+      totalInstances = layerCoords.length * basePairs.length;
+      const dummyBox = new THREE.BoxGeometry(1, 1, 0.3);
+      const invisibleMat = new THREE.MeshBasicMaterial({ visible: false });
+      instancedBox = new THREE.InstancedMesh(dummyBox, invisibleMat, totalInstances);
+      instancedBox.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      instancedBox.frustumCulled = false;
+      instancedBoxRef.current = instancedBox;
+      scene.add(instancedBox);
+
+      // --- Add only center layer first ---
+      textMeshes = [];
+      instanceMeta = [];
+      instanceIdx = 0;
+      addedLayers = new Set();
+
+      function addLayer(layer) {
+        for (const { xi, yi } of layer) {
+          // Prevent double-adding
+          const key = `${xi},${yi}`;
+          if (addedLayers.has(key)) continue;
+          addedLayers.add(key);
+
+          basePairs.forEach(({ displayText, geom, material, basePos }) => {
+            const mesh = new THREE.Mesh(geom.clone(), material.clone());
+            mesh.userData.label = displayText;
+            mesh.userData.originalColor = mesh.material.color.clone();
+
+            const offset = new THREE.Vector3(
+              (Math.random() - 0.5) * 40,
+              (Math.random() - 0.5) * 30,
+              0
+            );
+            const target = basePos.clone().add(new THREE.Vector3(
+              xi * d * 2 * aspect,
+              yi * d * 2,
+              0
+            ));
+            mesh.position.copy(offset);
+            mesh.userData.target = target;
+            mesh.userData.phase = Math.random() * Math.PI * 2;
+            scene.add(mesh);
+            textMeshes.push(mesh);
+
+            // Compute bounding box for this text
+            geom.computeBoundingBox();
+            const bb = geom.boundingBox;
+            const size = new THREE.Vector3().subVectors(bb.max, bb.min);
+
+            // Set instance matrix for this box
+            const matrix = new THREE.Matrix4();
+            matrix.compose(
+              new THREE.Vector3(target.x, target.y, target.z),
+              new THREE.Quaternion(),
+              new THREE.Vector3(size.x, size.y, 0.3)
+            );
+            instancedBox.setMatrixAt(instanceIdx, matrix);
+
+            // Store per-instance metadata
+            instanceMeta[instanceIdx] = {
+              label: displayText,
+              textMesh: mesh,
+              target,
+              phase: mesh.userData.phase,
+              size
+            };
+
+            // Link mesh to instance index (for animation)
+            mesh.userData.instanceIdx = instanceIdx;
+
+            instanceIdx++;
+          });
+        }
+        instancedBox.instanceMatrix.needsUpdate = true;
+        instanceMetaRef.current = instanceMeta;
+      }
+
+      // Add center layer (xi=0, yi=0)
+      addLayer(layersToAdd[0]);
+
+      // --- Lazy load surrounding layers ---
+      let layerIdx = 1;
+      function scheduleNextLayer() {
+        if (layerIdx >= layersToAdd.length) return;
+        const nextLayer = layersToAdd[layerIdx];
+        addLayer(nextLayer);
+        layerIdx++;
+        if (typeof window.requestIdleCallback === "function") {
+          window.requestIdleCallback(scheduleNextLayer, { timeout: 100 });
+        } else {
+          setTimeout(scheduleNextLayer, 30);
+        }
+      }
+      scheduleNextLayer();
+    });
 
     function animate(time) {
       requestAnimationFrame(animate);
       const t = time / 1000;
-      textMeshes.forEach(mesh => {
-        if (mesh.userData.target) {
-          const floatY = Math.sin(t * 1 + mesh.userData.phase) * 0.3;
-          const newY = mesh.userData.target.y + floatY;
-          mesh.position.lerp(
-            new THREE.Vector3(mesh.userData.target.x, newY, mesh.userData.target.z),
-            0.02
-          );
+      if (textMeshes.length && instancedBoxRef.current && instanceMetaRef.current.length) {
+        const instancedBox = instancedBoxRef.current;
+        const instanceMeta = instanceMetaRef.current;
+        const matrix = new THREE.Matrix4();
 
-          if (mesh.userData.boxMesh) {
-            mesh.userData.boxMesh.position.set(
-              mesh.userData.target.x,
-              newY,
-              mesh.userData.target.z
+        textMeshes.forEach(mesh => {
+          if (mesh.userData.target !== undefined && mesh.userData.instanceIdx !== undefined) {
+            const floatY = Math.sin(t * 1 + mesh.userData.phase) * 0.3;
+            const newY = mesh.userData.target.y + floatY;
+            mesh.position.lerp(
+              new THREE.Vector3(mesh.userData.target.x, newY, mesh.userData.target.z),
+              0.02
             );
+
+            const idx = mesh.userData.instanceIdx;
+            const meta = instanceMeta[idx];
+            if (meta) {
+              matrix.compose(
+                new THREE.Vector3(mesh.userData.target.x, newY, mesh.userData.target.z),
+                new THREE.Quaternion(),
+                new THREE.Vector3(meta.size.x, meta.size.y, 0.3)
+              );
+              instancedBox.setMatrixAt(idx, matrix);
+            }
           }
-        }
-      });
+        });
+        instancedBox.instanceMatrix.needsUpdate = true;
+      }
       renderer.render(scene, camera);
     }
     animate();
@@ -191,22 +306,24 @@ function Graph({ setSearchResults, setHasSearched }) {
     // Hover highlight
     canvas.addEventListener("pointermove", (e) => {
       if (drag.current.down) return;
+      if (!instancedBoxRef.current || !instanceMetaRef.current.length) return;
       const rect = canvas.getBoundingClientRect();
       mouse.current.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.current.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.current.setFromCamera(mouse.current, cameraRef.current);
-      const intersects = raycaster.current.intersectObjects(clickBoxes);
+      const intersects = raycaster.current.intersectObject(instancedBoxRef.current);
 
-      if (hoveredText.current && (!intersects.length || hoveredText.current !== intersects[0].object.userData.textMesh)) {
+      if (hoveredText.current && (!intersects.length || hoveredText.current !== instanceMetaRef.current[intersects[0]?.instanceId]?.textMesh)) {
         hoveredText.current.material.color.copy(hoveredText.current.userData.originalColor);
         hoveredText.current = null;
         canvas.style.cursor = "default";
       }
 
       if (intersects.length) {
-        const mesh = intersects[0].object.userData.textMesh;
-        if (hoveredText.current !== mesh) {
+        const instanceId = intersects[0].instanceId;
+        const mesh = instanceMetaRef.current[instanceId]?.textMesh;
+        if (mesh && hoveredText.current !== mesh) {
           if (hoveredText.current) {
             hoveredText.current.material.color.copy(hoveredText.current.userData.originalColor);
           }
@@ -240,22 +357,27 @@ function Graph({ setSearchResults, setHasSearched }) {
 
     // Click detection
     const handleClick = async (event) => {
+      if (!instancedBoxRef.current || !instanceMetaRef.current.length) return;
       const rect = canvas.getBoundingClientRect();
       mouse.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.current.setFromCamera(mouse.current, cameraRef.current);
-      const hits = raycaster.current.intersectObjects(clickBoxes);
+      const hits = raycaster.current.intersectObject(instancedBoxRef.current);
 
       if (hits.length) {
-        const categoryLabel = hits[0].object.userData.label;
-        console.log("Clicked category:", categoryLabel);
-        await filterByCategory(categoryLabel);
+        const instanceId = hits[0].instanceId;
+        const categoryLabel = instanceMetaRef.current[instanceId]?.label;
+        if (categoryLabel) {
+          console.log("Clicked category:", categoryLabel);
+          await filterByCategory(categoryLabel);
+        }
       }
     };
     window.addEventListener("click", handleClick);
 
     async function filterByCategory(label) {
+      setSearchLoading(true);
       try {
         const response = await fetch(`${PORT}/api/filter_by_categories`, {
           method: "POST",
@@ -280,6 +402,8 @@ function Graph({ setSearchResults, setHasSearched }) {
         console.error("Error calling API:", error);
         setSearchResults([]);
         setHasSearched(true);
+      }finally{
+        setSearchLoading(false);
       }
     }
 
