@@ -16,11 +16,12 @@ export function ApiCard({ api }) {
   const [copied, setCopied] = useState(false);
 
   const toggleExpanded = () => setIsExpanded(!isExpanded);
+  const PORT = import.meta.env.VITE_API_BASE_URL;
 
   const handleIntegrationSuggest = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/api/suggest-integration", {
+      const res = await fetch(`${PORT}/api/suggest-integration`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -40,27 +41,12 @@ export function ApiCard({ api }) {
     }
   };
 
-  // const handleHealthCheck = async () => {
-  //   setHealthLoading(true);
-  //   setHealthData(null);
-  //   try {
-  //     const res = await fetch(`http://localhost:8000/api/health-check/${api._id}`);
-  //     const data = await res.json();
-  //     setHealthData(data);
-  //   } catch (error) {
-  //     setHealthData({ status: "Down", latency_ms: -1 });
-  //   } finally {
-  //     setHealthLoading(false);
-  //     setIsHealthModalOpen(true);
-  //   }
-  // };
-
   const handleHealthCheck = async () => {
     console.log("Health check triggered for API:", api);
     setHealthLoading(true);
     setHealthData(null);
     try {
-      const res = await fetch(`http://localhost:8000/api/health-check/${api._id}`);
+      const res = await fetch(`${PORT}/api/health-check/${api._id}`);
       const data = await res.json();
       setHealthData(data);
     } catch (error) {

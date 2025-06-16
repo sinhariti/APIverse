@@ -67,12 +67,13 @@ function App() {
   const [searchResults, setSearchResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  const PORT = import.meta.env.VITE_API_BASE_URL;
 
   const handleSearch = async () => {
     if (searchQuery.trim()) {
       setSearchLoading(true); // Start loading
       try {
-        const res = await fetch('http://localhost:8000/api/search', {
+        const res = await fetch(`${PORT}/api/search`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query: searchQuery }),

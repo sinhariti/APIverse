@@ -52,6 +52,7 @@ function Graph({ setSearchResults, setHasSearched }) {
   const drag = useRef({ down: false, startX: 0, startY: 0, camX: 0, camY: 0 });
   const hoveredText = useRef(null);
   const cameraRef = useRef();
+  const PORT = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -256,7 +257,7 @@ function Graph({ setSearchResults, setHasSearched }) {
 
     async function filterByCategory(label) {
       try {
-        const response = await fetch("http://localhost:8000/api/filter_by_categories", {
+        const response = await fetch(`${PORT}/api/filter_by_categories`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
