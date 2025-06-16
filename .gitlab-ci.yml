@@ -17,10 +17,10 @@ test:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       exists:
-        - backend/test
+        - backend/
   image: python:3.11-slim
   before_script:
-    - cd backend
+    - cd backend/test
     - pip install --upgrade pip
     - pip install -r requirements.txt
     - pip install pytest pytest-asyncio httpx asgi-lifespan
