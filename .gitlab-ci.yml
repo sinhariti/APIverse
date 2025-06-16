@@ -31,9 +31,6 @@ test:
 # ------------------ Docker Build ------------------
 build:
   stage: build
-  needs:
-    - job: test
-      optional: false
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
