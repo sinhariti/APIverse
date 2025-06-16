@@ -4,11 +4,6 @@ stages:
   - test
   - build
   - deploy
-# Global Variables: Add your environment & secret keys here or via GitLab CI/CD Settings for security
-stages:
-  - test
-  - build
-  - deploy
 
 variables:
   SECRET_DETECTION_ENABLED: 'true'
@@ -30,7 +25,7 @@ test-backend:
     - pip install -r requirements.txt
     - pip install pytest pytest-asyncio httpx asgi-lifespan
   script:
-    - pytest tests/test_main.py --maxfail=1 --disable-warnings -v
+    - pytest test/test_main.py --maxfail=1 --disable-warnings -v
 
 
 # ------------------ Docker Build ------------------
