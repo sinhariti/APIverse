@@ -1,0 +1,57 @@
+steps:
+  # Step 1: Build and push backend
+  - name: 'gcr.io/cloud-builders/docker'
+    dir: 'backend'
+    args: ['build', '-t', 'gcr.io/$GOOGLE_PROJECT_ID/backend', '.']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$GOOGLE_PROJECT_ID/backend']
+
+  # Step 2: Deploy backend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-backend'
+    args:
+      [
+        'run', 'deploy', 'backend',
+        '--image', 'gcr.io/$GOOGLE_PROJECT_ID/backend',
+        '--platform', 'managed',
+        '--region', 'us-central1',
+        '--allow-unauthenticated'
+      ]
+
+  # Step 3: Get backend URL
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'get-backend-url'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        BACKEND_URL=$(gcloud run services describe backend --platform managed --region us-central1 --format='value(status.url)')
+        echo "VITE_API_URL=$BACKEND_URL" > frontend/.env.production
+
+  # Step 4: Build and push frontend
+  - name: 'gcr.io/cloud-builders/npm'
+    dir: 'frontend'
+    args: ['install']
+
+  - name: 'gcr.io/cloud-builders/npm'
+    dir: 'frontend'
+    args: ['run', 'build']
+
+  # Step 5: Deploy frontend to Cloud Run (optional)
+  - name: 'gcr.io/cloud-builders/docker'
+    dir: 'frontend'
+    args: ['build', '-t', 'gcr.io/$GOOGLE_PROJECT_ID/frontend', '.']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$GOOGLE_PROJECT_ID/frontend']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args:
+      [
+        'run', 'deploy', 'frontend',
+        '--image', 'gcr.io/$GOOGLE_PROJECT_ID/frontend',
+        '--platform', 'managed',
+        '--region', 'us-central1',
+        '--allow-unauthenticated'
+      ]

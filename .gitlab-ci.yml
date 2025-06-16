@@ -22,35 +22,26 @@ test-backend:
     - if: '$CI_COMMIT_BRANCH == "main"'
       exists:
         - backend/
-  image: python:3.9
-  script:
+  image: python:3.11-slim 
+  before_script:
     - cd backend
-    - pip install -r requirements.txt || echo "No requirements.txt found"
-    - echo "Backend tests will run here (pytest later)"
-# Frontend Testing (React)
-test-frontend:
-  stage: test
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      exists:
-        - frontend/
-  image: node:16
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+    - pip install pytest pytest-asyncio httpx asgi-lifespan
   script:
-    - cd frontend
-    - echo "Frontend tests will run here (npm test later)"
-# Build Stage (Placeholder - Docker commands to be added later)
+    - pytest tests/test_main.py --maxfail=1 --disable-warnings -v
+
 build:
   stage: build
   needs:
     - job: test-backend
-      optional: true
-    - job: test-frontend
-      optional: true
+      optional: false
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
-    - echo "Docker builds will go here"
-# Deploy Stage (Placeholder - e.g., Google Cloud Run deployment)
+    - echo "Building Docker image"
+    - gcloud builds submit --tag gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD
+
 deploy:
   stage: deploy
   needs:
@@ -58,7 +49,14 @@ deploy:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
-    - echo "Deployment logic will go here"
+    - echo "Deploying to Cloud Run"
+    - gcloud run deploy $GOOGLE_CLOUD_BUILD \
+        --image gcr.io/$GOOGLE_PROJECT_ID/$GOOGLE_CLOUD_BUILD \
+        --region 'us-central1' \
+        --port 80 \
+        --platform managed \
+        --allow-unauthenticated \
+        --set-env-vars "VITE_API_URL=$API_URL"
 # Notes:
 # 1. Sensitive variables (API keys, secrets) should be configured via GitLab UI (Settings > CI/CD > Variables) NOT in this file.
 # 2. You can customize SAST, Dependency Scanning, etc. via GitLab’s official templates.
